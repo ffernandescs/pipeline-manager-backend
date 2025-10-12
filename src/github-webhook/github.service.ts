@@ -28,7 +28,7 @@ export class GithubService {
     const name = body.repository?.name;
     const ref = body.ref;
     const branch = ref.replace('refs/heads/', '');
-
+    console.log(body, 'body');
     if (!repo) {
       console.warn('Repositório não encontrado no payload do webhook');
       return false;
