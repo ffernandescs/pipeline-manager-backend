@@ -1,0 +1,61 @@
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Pipeline {
+  id        String   @id @default(cuid())
+  name      String
+  status    String?
+  steps     Step[]
+  logs      Log[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Step {
+  id         String   @id @default(cuid())
+  name       String
+  command    String   @db.Text
+  type       String
+  enabled    Boolean
+  pipeline   Pipeline @relation(fields: [pipelineId], references: [id])
+  pipelineId String
+  status     String   @default("pending")
+  logs       Log[]
+}
+
+model Log {
+  id         String   @id @default(cuid())
+  message    String   @db.Text // 👈 aqui
+  pipeline   Pipeline @relation(fields: [pipelineId], references: [id])
+  pipelineId String
+  step       Step?    @relation(fields: [stepId], references: [id])
+  stepId     String?
+  createdAt  DateTime @default(now())
+}
+
+model Project {
+  id            String           @id @default(cuid())
+  name          String
+  repositoryUrl String
+  branch        String
+  pipelines     PipelineConfig[]
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+}
+
+model PipelineConfig {
+  id        String   @id @default(cuid())
+  projectId String   @unique
+  name      String
+  config    Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id])
+}
