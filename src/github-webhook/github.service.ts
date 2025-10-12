@@ -5,11 +5,14 @@ import { Request } from 'express';
 
 @Injectable()
 export class GithubService {
-  constructor(private readonly pipelinesService: PipelinesService) {}
+  constructor(private pipelinesService: PipelinesService) {}
 
-  // Handle webhook GitHub
+  // ID fixo da pipeline global
+  private readonly pipelineId = 'pipeline-global-id'; // substitua por qualquer string ou ID real do DB
+
+  // github.service.ts
   async handleWebhook(req: Request, signature: string): Promise<boolean> {
-    const SECRET = 'mysecret123'; // configure seu secret real
+    const SECRET = 'mysecret123';
     const hmac = crypto.createHmac('sha256', SECRET);
     const digest =
       'sha256=' + hmac.update(JSON.stringify(req.body)).digest('hex');
@@ -20,32 +23,30 @@ export class GithubService {
     }
 
     const body = req.body;
-    const commitName =
-      body.head_commit?.message ||
-      body.pull_request?.title ||
-      'Commit sem nome';
-    const repoFullName = body.repository?.full_name;
-    const repoName = body.repository?.name;
-    const ref = body.ref || body.pull_request?.head?.ref;
-    const branch = ref?.replace('refs/heads/', '') || 'main';
+    const commitName = body.head_commit?.message || 'Commit sem nome';
+    const repo = body.repository?.full_name;
+    const name = body.repository?.name;
+    const ref = body.ref;
+    const branch = ref.replace('refs/heads/', '');
 
-    if (!repoFullName || !repoName) {
+    if (!repo) {
       console.warn('Repositório não encontrado no payload do webhook');
       return false;
     }
 
-    // 🔹 Cria pipeline real no DB (status "queued")
+    // 🔹 Cria a pipeline com status "queued"
     const pipelineId = await this.pipelinesService.createPipeline(
       commitName,
-      repoName,
-      repoFullName,
+      name,
+      repo,
       branch,
     );
 
-    // 🔹 Enfileira a pipeline para execução pelo Worker
-    await this.pipelinesService.enqueuePipeline(repoName, pipelineId);
+    // 🔹 Apenas enfileira — não executa diretamente
+    await this.pipelinesService.enqueuePipeline(name, pipelineId);
 
-    console.log(`📦 Pipeline enfileirada: ${repoName} (${pipelineId})`);
+    console.log(`📦 Pipeline enfileirada: ${name} (${pipelineId})`);
+
     return true;
   }
 }
