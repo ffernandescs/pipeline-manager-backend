@@ -20,8 +20,8 @@ async function bootstrap() {
     }),
   );
 
-  await app.listen(3001);
-  console.log('🚀 Servidor rodando em http://localhost:3001');
+  await app.listen(3001, '0.0.0.0');
+  console.log('🚀 Servidor rodando em http://0.0.0.0:3001');
 }
 
 bootstrap();
