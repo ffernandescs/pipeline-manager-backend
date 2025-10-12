@@ -9,6 +9,10 @@ export class PipelinesProcessor {
   // método chamado manualmente pelo Worker
   async processJob(job: Job<{ name: string; pipelineId?: string }>) {
     const { name, pipelineId } = job.data;
+    if (!pipelineId) {
+      throw new Error('pipelineId não pode ser undefined');
+    }
+
     await this.pipelinesService.runPipeline(name, pipelineId);
   }
 }
